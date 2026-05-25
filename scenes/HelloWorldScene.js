@@ -12,9 +12,9 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.items = null;
     this.platforms = null;
     this.collected = [];
-    this.counts = { square: 0, triangle: 0, diamond: 0 };
+    this.counts = { square: 0, triangle: 0, diamond: 0, skull: 0 };
     this.score = 0;
-    this.itemScores = { square: 5, triangle: 8, diamond: 12 };
+    this.itemScores = { square: 5, triangle: 8, diamond: 12, skull: -5 };
     this.statusText = null;
     this.scoreText = null;
     this.timerText = null;
@@ -68,7 +68,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     });
     this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
 
-    this.statusText = this.add.text(16, 16, "Items: 0 / 0 / 0", {
+    this.statusText = this.add.text(16, 16, "Items: 0 / 0 / 0 / 0", {
       fontSize: "20px",
       fill: "#ffffff",
     });
@@ -139,7 +139,7 @@ export default class HelloWorldScene extends Phaser.Scene {
   }
 
   spawnItem() {
-    const types = ["square", "triangle", "diamond"];
+    const types = ["square", "triangle", "diamond", "skull"];
     const type = Phaser.Utils.Array.GetRandom(types);
     const x = Phaser.Math.Between(50, 750);
     const y = -20;
@@ -149,13 +149,17 @@ export default class HelloWorldScene extends Phaser.Scene {
       item = this.add.rectangle(x, y, 36, 36, 0xffcc00);
     } else if (type === "triangle") {
       item = this.add.triangle(x, y, 0, 36, 18, 0, 36, 36, 0x4bcffa);
-    } else {
+    } else if (type === "diamond") {
       item = this.add.polygon(x, y, [0, 18, 18, 0, 36, 18, 18, 36], 0xff6b6b);
+    } else {
+      item = this.add.circle(x, y, 18, 0x9b5de5);
     }
 
     this.physics.add.existing(item);
     
     item.remainingPoints = this.itemScores[type] || 0;
+    item.isPenalty = type === "skull";
+    item.groundBounces = 0;
     item.body.setCollideWorldBounds(true);
     item.body.setGravityY(200);
     item.itemType = type;
@@ -192,6 +196,15 @@ export default class HelloWorldScene extends Phaser.Scene {
     }
     item.lastGroundHit = now;
 
+    if (item.isPenalty) {
+      if (item.groundBounces >= 1) {
+        item.destroy();
+      } else {
+        item.groundBounces += 1;
+      }
+      return;
+    }
+
     item.remainingPoints -= 5;
     if (item.remainingPoints <= 0) {
       item.destroy();
@@ -215,7 +228,7 @@ export default class HelloWorldScene extends Phaser.Scene {
 
   updateStatusText() {
     this.statusText.setText(
-      `Items: ${this.counts.square} / ${this.counts.triangle} / ${this.counts.diamond}`
+      `Items: ${this.counts.square} / ${this.counts.triangle} / ${this.counts.diamond} / ${this.counts.skull}`
     );
   }
 
