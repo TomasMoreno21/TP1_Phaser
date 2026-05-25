@@ -13,6 +13,9 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.collected = [];
     this.counts = { square: 0, triangle: 0, diamond: 0 };
     this.statusText = null;
+    this.timerText = null;
+    this.remainingTime = 30;
+    this.gameOver = false;
   }
 
   preload() {
@@ -44,8 +47,13 @@ export default class HelloWorldScene extends Phaser.Scene {
       fill: "#ffffff",
     });
 
-    this.add.text(16, 44, "Reúne 2 de cada figura", {
-      fontSize: "10px",
+    this.timerText = this.add.text(16, 44, `Tiempo: ${this.remainingTime}`, {
+      fontSize: "20px",
+      fill: "#ffcc00",
+    });
+
+    this.add.text(16, 72, "Reúne 2 de cada figura", {
+      fontSize: "14px",
       fill: "#854040",
     });
 
@@ -55,9 +63,21 @@ export default class HelloWorldScene extends Phaser.Scene {
       callbackScope: this,
       loop: true,
     });
+
+    this.time.addEvent({
+      delay: 1000,
+      callback: this.decreaseTimer,
+      callbackScope: this,
+      loop: true,
+    });
   }
 
   update() {
+    if (this.gameOver) {
+      this.player.body.setVelocityX(0);
+      return;
+    }
+
     const speed = 350;
     const jumpSpeed = -420;
 
@@ -71,6 +91,19 @@ export default class HelloWorldScene extends Phaser.Scene {
 
     if (this.cursors.up.isDown && this.player.body.blocked.down) {
       this.player.body.setVelocityY(jumpSpeed);
+    }
+  }
+
+  decreaseTimer() {
+    if (this.gameOver) {
+      return;
+    }
+
+    this.remainingTime -= 1;
+    this.timerText.setText(`Tiempo: ${this.remainingTime}`);
+
+    if (this.remainingTime <= 0) {
+      this.endGame(false);
     }
   }
 
@@ -92,7 +125,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.physics.add.existing(item);
     item.body.setBounce(0.3);
     item.body.setCollideWorldBounds(true);
-    item.body.setGravityY(230);
+    item.body.setGravityY(200);
     item.type = type;
     item.body.setSize(item.width, item.height, true);
 
@@ -120,12 +153,25 @@ export default class HelloWorldScene extends Phaser.Scene {
       this.counts.triangle >= 2 &&
       this.counts.diamond >= 2
     ) {
-      this.add.text(300, 300, "GANASTE!", {
-        fontSize: "48px",
-        fill: "#00ff00",
-      });
-      this.physics.pause();
-      this.time.removeAllEvents();
+      this.endGame(true);
     }
+  }
+
+  endGame(won) {
+    if (this.gameOver) {
+      return;
+    }
+
+    this.gameOver = true;
+    const message = won ? "GANASTE!" : "PERDISTE";
+    const color = won ? "#00ff00" : "#ff0000";
+
+    this.add.text(300, 300, message, {
+      fontSize: "48px",
+      fill: color,
+    });
+
+    this.physics.pause();
+    this.time.removeAllEvents();
   }
 }
