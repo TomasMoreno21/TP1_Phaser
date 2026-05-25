@@ -14,7 +14,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.recolectados = [];
     this.conteos = { square: 0, triangle: 0, diamond: 0, skull: 0 };
     this.puntaje = 0;
-    this.puntajesObjetos = { square: 5, triangle: 8, diamond: 12, skull: -5 };
+    this.puntajesObjetos = { square: 6, triangle: 8, diamond: 12, skull: -5 };
     this.textoEstado = null;
     this.textoPuntaje = null;
     this.textoTiempo = null;
@@ -23,32 +23,34 @@ export default class HelloWorldScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.image('ninja', 'public/assets/Ninja.png');
+    this.load.image('cielo', 'public/assets/Cielo.webp');
+    this.load.image('square', 'public/assets/square.png');
+    this.load.image('triangle', 'public/assets/triangle.png');
+    this.load.image('diamond', 'public/assets/diamond.png');
+    this.load.image('platform', 'public/assets/platform.png');
   }
 
   create() {
     this.physics.world.setBounds(0, 0, 800, 600);
-    this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
+    this.add.image(400, 300, 'cielo').setDisplaySize(800, 600);
 
     const suelo = this.add.rectangle(400, 560, 800, 80, 0x4e9f3d);
     this.physics.add.existing(suelo, true);
 
     const datosPlataforma = [
-      { x: 100, y: 430, width: 160, height: 24 },
-      { x: 700, y: 430, width: 160, height: 24 },
+      { x: 100, y: 430 },
+      { x: 700, y: 430 },
     ];
-    this.plataformas = datosPlataforma.map((plataforma) => {
-      const plataformaRect = this.add.rectangle(
-        plataforma.x,
-        plataforma.y,
-        plataforma.width,
-        plataforma.height,
-        0x4e9f3d
-      );
-      this.physics.add.existing(plataformaRect, true);
-      return plataformaRect;
+    this.plataformas = datosPlataforma.map((dato) => {
+      const plataformaSprite = this.add.sprite(dato.x, dato.y, 'platform');
+      plataformaSprite.setDisplaySize(160, 24);
+      this.physics.add.existing(plataformaSprite, true);
+      return plataformaSprite;
     });
 
-    this.jugador = this.add.rectangle(400, 480, 48, 64, 0xe63946);
+    this.jugador = this.add.sprite(400, 480, 'ninja');
+    this.jugador.setDisplaySize(56, 56);
     this.physics.add.existing(this.jugador);
     this.jugador.body.setCollideWorldBounds(true);
     this.jugador.body.setBounce(0.1);
@@ -146,13 +148,16 @@ export default class HelloWorldScene extends Phaser.Scene {
 
     let objeto;
     if (tipo === "square") {
-      objeto = this.add.rectangle(x, y, 36, 36, 0xffcc00);
+      objeto = this.add.sprite(x, y, 'square');
+      objeto.setDisplaySize(36, 36);
     } else if (tipo === "triangle") {
-      objeto = this.add.triangle(x, y, 0, 36, 18, 0, 36, 36, 0x4bcffa);
+      objeto = this.add.sprite(x, y, 'triangle');
+      objeto.setDisplaySize(36, 36);
     } else if (tipo === "diamond") {
-      objeto = this.add.polygon(x, y, [0, 18, 18, 0, 36, 18, 18, 36], 0xff6b6b);
+      objeto = this.add.sprite(x, y, 'diamond');
+      objeto.setDisplaySize(36, 36);
     } else {
-      objeto = this.add.circle(x, y, 18, 0x9b5de5);
+      objeto = this.add.circle(x, y, 18, 0xff0000);
     }
 
     this.physics.add.existing(objeto);
@@ -162,7 +167,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     objeto.body.setCollideWorldBounds(true);
     objeto.body.setGravityY(200);
     objeto.tipoObjeto = tipo;
-    objeto.body.setSize(objeto.width, objeto.height, true);
+    objeto.body.setSize(36, 36, true);
 
     this.objetos.add(objeto);
     objeto.body.setBounce(0.6);

@@ -8,8 +8,12 @@ export default class GameOverScene extends Phaser.Scene {
     this.puntaje = typeof data.puntaje === "number" ? data.puntaje : 0;
   }
 
+  preload() {
+    this.load.image('fondoMenu', 'public/assets/FondoMenu.jpg');
+  }
+
   create() {
-    this.cameras.main.setBackgroundColor(0x10121a);
+    this.add.image(400, 300, 'fondoMenu').setDisplaySize(800, 600);
 
     const titulo = this.gano ? "¡GANASTE!" : "¡PERDISTE!";
     const colorTitulo = this.gano ? "#00ff00" : "#ff0000";
@@ -22,17 +26,17 @@ export default class GameOverScene extends Phaser.Scene {
 
     this.add.text(400, 280, `Puntaje final: ${this.puntaje}`, {
       fontSize: "32px",
-      fill: "#ffffff",
+      fill: "#000000",
     }).setOrigin(0.5);
 
     this.add.text(400, 360, "Gracias por jugar", {
       fontSize: "24px",
-      fill: "#aaaaaa",
+      fill: "#000000",
     }).setOrigin(0.5);
 
     this.add.text(400, 430, "Presiona R para volver a jugar", {
       fontSize: "20px",
-      fill: "#00bbff",
+      fill: "#000000",
     }).setOrigin(0.5);
 
     this.input.keyboard.once("keydown-R", () => {
