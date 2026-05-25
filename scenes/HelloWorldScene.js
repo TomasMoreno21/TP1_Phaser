@@ -1,46 +1,131 @@
-// URL to explain PHASER scene: https://rexrainbow.github.io/phaser3-rex-notes/docs/site/scene/
+﻿// Base scene for the next step of the game.
+// It adds falling collectible items and a simple win condition.
 
 export default class HelloWorldScene extends Phaser.Scene {
   constructor() {
-    // key of the scene
-    // the key will be used to start the scene by other scenes
     super("hello-world");
   }
 
   init() {
-    // this is called before the scene is created
-    // init variables
-    // take data passed from other scenes
-    // data object param {}
+    this.player = null;
+    this.cursors = null;
+    this.items = null;
+    this.collected = [];
+    this.counts = { square: 0, triangle: 0, diamond: 0 };
+    this.statusText = null;
   }
 
   preload() {
-    // load assets
-    this.load.image("sky", "./public/assets/space3.png");
-    this.load.image("logo", "./public/assets/phaser3-logo.png");
-    this.load.image("red", "./public/assets/particles/red.png");
   }
 
   create() {
-    // create game objects
-    this.add.image(400, 300, "sky");
+    this.physics.world.setBounds(0, 0, 800, 600);
+    this.add.rectangle(400, 300, 800, 600, 0x1a1a2e);
 
-    const logo = this.physics.add.image(400, 100, "logo");
-    logo.setVelocity(100, 200);
-    logo.setBounce(1, 1);
-    logo.setCollideWorldBounds(true);
+    const ground = this.add.rectangle(400, 560, 800, 80, 0x4e9f3d);
+    this.physics.add.existing(ground, true);
 
-    // emmit particles from logo
-    const emitter = this.add.particles(0, 0, "red", {
-      speed: 100,
-      scale: { start: 1, end: 0 },
-      blendMode: "ADD",
+    this.player = this.add.rectangle(400, 480, 48, 64, 0xe63946);
+    this.physics.add.existing(this.player);
+    this.player.body.setCollideWorldBounds(true);
+    this.player.body.setBounce(0.1);
+    this.player.body.setGravityY(600);
+
+    this.physics.add.collider(this.player, ground);
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+
+    this.items = this.physics.add.group();
+    this.physics.add.collider(this.items, ground);
+    this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
+
+    this.statusText = this.add.text(16, 16, "Items: 0 / 0 / 0", {
+      fontSize: "20px",
+      fill: "#ffffff",
     });
 
-    emitter.startFollow(logo);
+    this.add.text(16, 44, "Reúne 2 de cada figura", {
+      fontSize: "10px",
+      fill: "#854040",
+    });
+
+    this.time.addEvent({
+      delay: 1000,
+      callback: this.spawnItem,
+      callbackScope: this,
+      loop: true,
+    });
   }
 
   update() {
-    // update game objects
+    const speed = 350;
+    const jumpSpeed = -420;
+
+    if (this.cursors.left.isDown) {
+      this.player.body.setVelocityX(-speed);
+    } else if (this.cursors.right.isDown) {
+      this.player.body.setVelocityX(speed);
+    } else {
+      this.player.body.setVelocityX(0);
+    }
+
+    if (this.cursors.up.isDown && this.player.body.blocked.down) {
+      this.player.body.setVelocityY(jumpSpeed);
+    }
+  }
+
+  spawnItem() {
+    const types = ["square", "triangle", "diamond"];
+    const type = Phaser.Utils.Array.GetRandom(types);
+    const x = Phaser.Math.Between(50, 750);
+    const y = -20;
+
+    let item;
+    if (type === "square") {
+      item = this.add.rectangle(x, y, 36, 36, 0xffcc00);
+    } else if (type === "triangle") {
+      item = this.add.triangle(x, y, 0, 36, 18, 0, 36, 36, 0x4bcffa);
+    } else {
+      item = this.add.polygon(x, y, [0, 18, 18, 0, 36, 18, 18, 36], 0xff6b6b);
+    }
+
+    this.physics.add.existing(item);
+    item.body.setBounce(0.3);
+    item.body.setCollideWorldBounds(true);
+    item.body.setGravityY(230);
+    item.type = type;
+    item.body.setSize(item.width, item.height, true);
+
+    this.items.add(item);
+  }
+
+  collectItem(player, item) {
+    const type = item.type;
+    item.destroy();
+    this.collected.push(type);
+    this.counts[type] += 1;
+    this.updateStatusText();
+    this.checkWinCondition();
+  }
+
+  updateStatusText() {
+    this.statusText.setText(
+      `Items: ${this.counts.square} / ${this.counts.triangle} / ${this.counts.diamond}`
+    );
+  }
+
+  checkWinCondition() {
+    if (
+      this.counts.square >= 2 &&
+      this.counts.triangle >= 2 &&
+      this.counts.diamond >= 2
+    ) {
+      this.add.text(300, 300, "GANASTE!", {
+        fontSize: "48px",
+        fill: "#00ff00",
+      });
+      this.physics.pause();
+      this.time.removeAllEvents();
+    }
   }
 }
