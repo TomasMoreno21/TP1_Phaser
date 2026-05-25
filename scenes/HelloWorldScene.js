@@ -12,9 +12,12 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.items = null;
     this.collected = [];
     this.counts = { square: 0, triangle: 0, diamond: 0 };
+    this.score = 0;
+    this.itemScores = { square: 5, triangle: 10, diamond: 15 };
     this.statusText = null;
+    this.scoreText = null;
     this.timerText = null;
-    this.remainingTime = 30;
+    this.remainingTime = 25;
     this.gameOver = false;
   }
 
@@ -47,14 +50,19 @@ export default class HelloWorldScene extends Phaser.Scene {
       fill: "#ffffff",
     });
 
-    this.timerText = this.add.text(16, 44, `Tiempo: ${this.remainingTime}`, {
+    this.scoreText = this.add.text(16, 44, "Puntaje: 0", {
+      fontSize: "20px",
+      fill: "#00ffff",
+    });
+
+    this.timerText = this.add.text(16, 72, `Tiempo: ${this.remainingTime}`, {
       fontSize: "20px",
       fill: "#ffcc00",
     });
 
-    this.add.text(16, 72, "Reúne 2 de cada figura", {
-      fontSize: "14px",
-      fill: "#854040",
+    this.add.text(16, 100, "Supera 100 puntos para ganar", {
+      fontSize: "18px",
+      fill: "#d7227a",
     });
 
     this.time.addEvent({
@@ -137,7 +145,9 @@ export default class HelloWorldScene extends Phaser.Scene {
     item.destroy();
     this.collected.push(type);
     this.counts[type] += 1;
+    this.score += this.itemScores[type] || 0;
     this.updateStatusText();
+    this.updateScoreText();
     this.checkWinCondition();
   }
 
@@ -147,12 +157,12 @@ export default class HelloWorldScene extends Phaser.Scene {
     );
   }
 
+  updateScoreText() {
+    this.scoreText.setText(`Puntaje: ${this.score}`);
+  }
+
   checkWinCondition() {
-    if (
-      this.counts.square >= 2 &&
-      this.counts.triangle >= 2 &&
-      this.counts.diamond >= 2
-    ) {
+    if (this.score > 100) {
       this.endGame(true);
     }
   }
