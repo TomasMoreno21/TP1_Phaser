@@ -13,7 +13,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.collected = [];
     this.counts = { square: 0, triangle: 0, diamond: 0 };
     this.score = 0;
-    this.itemScores = { square: 5, triangle: 10, diamond: 15 };
+    this.itemScores = { square: 5, triangle: 8, diamond: 12 };
     this.statusText = null;
     this.scoreText = null;
     this.timerText = null;
@@ -42,7 +42,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
 
     this.items = this.physics.add.group();
-    this.physics.add.collider(this.items, ground);
+    this.physics.add.collider(this.items, ground, this.onItemGroundCollision, null, this);
     this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
 
     this.statusText = this.add.text(16, 16, "Items: 0 / 0 / 0", {
@@ -66,7 +66,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     });
 
     this.time.addEvent({
-      delay: 1000,
+      delay: 500,
       callback: this.spawnItem,
       callbackScope: this,
       loop: true,
@@ -131,21 +131,60 @@ export default class HelloWorldScene extends Phaser.Scene {
     }
 
     this.physics.add.existing(item);
-    item.body.setBounce(0.3);
+    
+    item.remainingPoints = this.itemScores[type] || 0;
     item.body.setCollideWorldBounds(true);
     item.body.setGravityY(200);
-    item.type = type;
+    item.itemType = type;
     item.body.setSize(item.width, item.height, true);
 
     this.items.add(item);
+    item.body.setBounce(0.6);
+  }
+
+  onItemGroundCollision(objA, objB) {
+    if (this.gameOver) return;
+
+    const findItem = (a, b) => {
+      const candidates = [a, b];
+      for (const o of candidates) {
+        if (!o) continue;
+        if (o.itemType && (o.itemType === 'square' || o.itemType === 'triangle' || o.itemType === 'diamond')) return o;
+        if (o.body && o.body.gameObject && o.body.gameObject.itemType) return o.body.gameObject;
+        if (o.gameObject && o.gameObject.itemType) return o.gameObject;
+      }
+      return null;
+    };
+
+    const item = findItem(objA, objB);
+    if (!item || !item.body) return;
+
+    if (typeof item.remainingPoints === 'undefined') {
+      item.remainingPoints = this.itemScores[item.itemType] || 0;
+    }
+
+    const now = this.time.now;
+    if (item.lastGroundHit && now - item.lastGroundHit < 200) {
+      return;
+    }
+    item.lastGroundHit = now;
+
+    item.remainingPoints -= 5;
+    if (item.remainingPoints <= 0) {
+      item.destroy();
+    } else {
+      const max = this.itemScores[item.itemType] || 1;
+      if (item.setAlpha) item.setAlpha(Math.max(0.2, item.remainingPoints / max));
+    }
   }
 
   collectItem(player, item) {
-    const type = item.type;
+    const type = item.itemType;
+    const earned = item.remainingPoints || this.itemScores[type] || 0;
     item.destroy();
     this.collected.push(type);
     this.counts[type] += 1;
-    this.score += this.itemScores[type] || 0;
+    this.score += earned;
     this.updateStatusText();
     this.updateScoreText();
     this.checkWinCondition();
