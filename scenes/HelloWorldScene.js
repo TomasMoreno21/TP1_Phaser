@@ -10,6 +10,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.player = null;
     this.cursors = null;
     this.items = null;
+    this.platforms = null;
     this.collected = [];
     this.counts = { square: 0, triangle: 0, diamond: 0 };
     this.score = 0;
@@ -31,6 +32,22 @@ export default class HelloWorldScene extends Phaser.Scene {
     const ground = this.add.rectangle(400, 560, 800, 80, 0x4e9f3d);
     this.physics.add.existing(ground, true);
 
+    const platformData = [
+      { x: 100, y: 430, width: 160, height: 24 },
+      { x: 700, y: 430, width: 160, height: 24 },
+    ];
+    this.platforms = platformData.map((platform) => {
+      const platformRect = this.add.rectangle(
+        platform.x,
+        platform.y,
+        platform.width,
+        platform.height,
+        0x4e9f3d
+      );
+      this.physics.add.existing(platformRect, true);
+      return platformRect;
+    });
+
     this.player = this.add.rectangle(400, 480, 48, 64, 0xe63946);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
@@ -38,11 +55,17 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.player.body.setGravityY(600);
 
     this.physics.add.collider(this.player, ground);
+    this.platforms.forEach((platform) => {
+      this.physics.add.collider(this.player, platform);
+    });
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
     this.items = this.physics.add.group();
     this.physics.add.collider(this.items, ground, this.onItemGroundCollision, null, this);
+    this.platforms.forEach((platform) => {
+      this.physics.add.collider(this.items, platform, this.onItemGroundCollision, null, this);
+    });
     this.physics.add.overlap(this.player, this.items, this.collectItem, null, this);
 
     this.statusText = this.add.text(16, 16, "Items: 0 / 0 / 0", {
